@@ -49,8 +49,8 @@ const Chatbot: React.FC = () => {
   const resultsRef = useRef<HTMLDivElement>(null);
 
   const suggestions = [
-    "AI-powered healthcare solutions",
-    "Sustainable energy technology",
+    "Platform to manage all your subscriptions",
+    "AI-powered productivity tools",
     "Remote work collaboration tools",
   ];
 
