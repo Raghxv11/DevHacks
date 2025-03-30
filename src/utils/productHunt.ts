@@ -96,7 +96,7 @@ const getPostID = async (link: string): Promise<string> => {
   const soup = await parseHTML(`https://www.producthunt.com${link}/embed`);
   if (!soup) return '';
   const postIdMatch = soup.html()?.match(/post_id=(.*?)&amp;theme=light/);
-  
+
   if (postIdMatch && postIdMatch[1]) {
     return postIdMatch[1];
   } else {
