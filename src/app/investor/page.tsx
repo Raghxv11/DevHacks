@@ -230,7 +230,8 @@ export default function InvestorPage() {
                 width={24} 
                 height={24} 
               />
-              <h4 className="black">Back</h4>
+              
+              <Link href="/find-investors"><h4 className="black">Back</h4></Link>
             </div>
             <div className="horizontal_block">
               <div className="hidden_block" style={{ display: "block" }}>
