@@ -120,7 +120,7 @@ export default function Home() {
         </nav>
 
         {/* Centered Hero Section */}
-        <div className="max-w-5xl mx-auto text-center mb-12">
+        <div className="max-w-5xl mx-auto text-center mb-12 mt-8">
           <h1 className="text-4xl md:text-6xl font-bold text-investa-dark leading-tight mb-6">
             {mode === "investor"
               ? "Discover promising startups for your portfolio"
@@ -132,14 +132,16 @@ export default function Home() {
               : "Showcase your startup to a curated network of investors looking for the next big opportunity in your industry."}
           </p>
           <div className="flex flex-wrap justify-center gap-4">
-            <Link href="/get-started">
+            <Link href={mode === "investor" ? "/find-startups" : "/find-investors"}>
               <button className="py-3 px-8 bg-investa-primary text-white rounded-full text-lg font-medium hover:bg-opacity-90 transition-all shadow-md hover:shadow-lg transform hover:scale-105">
                 Get Started
               </button>
             </Link>
-            <button className="py-3 px-8 border-2 border-investa-gray text-investa-gray rounded-full text-lg font-medium hover:bg-gray-50 transition-all transform hover:scale-105">
-              Learn More
-            </button>
+            <Link href="/learn">
+              <button className="py-3 px-8 border-2 border-investa-gray text-investa-gray rounded-full text-lg font-medium hover:bg-gray-50 transition-all transform hover:scale-105">
+                Learn More
+              </button>
+            </Link>
           </div>
         </div>
 
