@@ -1,5 +1,6 @@
 import axios from 'axios';
 import * as cheerio from 'cheerio';
+import type { CheerioAPI } from 'cheerio';
 
 // Define the structure of the data you want to scrape
 interface PostData {
@@ -59,8 +60,8 @@ const scrapPostContent = async (postId: string): Promise<PostData | null> => {
 
   // Extract data
   try {
-    postData.title = soup('meta[property="og:title"]').attr('content')?.split(" - ")[0] + " (source: Product Hunt)" ?? '';
-    postData.short_description = soup('meta[property="og:title"]').attr('content')?.split(" - ")[1].split("| ")[0] ?? '';
+    postData.title = (soup('meta[property="og:title"]').attr('content')?.split(" - ")[0] ?? '') + " (source: Product Hunt)";
+    postData.short_description = soup('meta[property="og:title"]').attr('content')?.split(" - ")[1]?.split("| ")[0] ?? '';
     postData.logo = soup('meta[property="og:image"]').attr('content') ?? '';
     postData.description = soup('meta[property="og:description"]').attr('content') ?? '';
     postData.product_hunt_url = soup('meta[property="og:url"]').attr('content') ?? '';
@@ -96,7 +97,7 @@ const getPostID = async (link: string): Promise<string> => {
   const soup = await parseHTML(`https://www.producthunt.com${link}/embed`);
   if (!soup) return '';
   const postIdMatch = soup.html()?.match(/post_id=(.*?)&amp;theme=light/);
-
+  
   if (postIdMatch && postIdMatch[1]) {
     return postIdMatch[1];
   } else {

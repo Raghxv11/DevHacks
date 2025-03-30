@@ -18,14 +18,6 @@ interface ChatResponse {
   sheetUpdated?: boolean;
   error?: string;
   githubResults?: GitHubResult[];
-  productHuntPosts?: any;
-  similarityResults?: {
-    name: string;
-    industry: string;
-    stage: string;
-    website: string;
-    similarity: string;
-  }[];
 }
 
 interface Startup {
@@ -49,7 +41,9 @@ const Chatbot: React.FC = () => {
   const [productIdea, setProductIdea] = useState("");
   const [response, setResponse] = useState<ChatResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [expandedStartups, setExpandedStartups] = useState<Set<number>>(new Set());
+  const [expandedStartups, setExpandedStartups] = useState<Set<number>>(
+    new Set()
+  );
   const [loadingProgress, setLoadingProgress] = useState(0);
   const [inputError, setInputError] = useState<string | null>(null);
   const [selectedSuggestion, setSelectedSuggestion] = useState<string | null>(null);
@@ -57,8 +51,9 @@ const Chatbot: React.FC = () => {
 
   const suggestions = [
     "Platform to manage all your subscriptions",
-    "AI-powered productivity tools",
-    "Remote work collaboration tools",
+    "Linkedin Alternative",
+    "An analytics app for discord research",
+    "AI Beauty Analysis"
   ];
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -98,11 +93,13 @@ const Chatbot: React.FC = () => {
         cache: "no-store",
       });
 
-      // Clear previous response
+      // Clear previous response before setting new one
       setResponse(null);
 
       const data = await res.json();
       console.log("Raw API Response:", data);
+      console.log("Raw content:", data.content);
+      console.log("Sheet updated:", data.sheetUpdated);
 
       if (data.error) {
         console.error("Error from API:", data.error);
@@ -736,8 +733,8 @@ const Chatbot: React.FC = () => {
             </div>
           )}
 
-            {/* Similarity Search Results */}
-            {response && response.similarityResults && (
+          {/* Similarity Search Results */}
+          {response && response.similarityResults && (
             <section className="mt-16">
               <div className="bg-gradient-to-r from-orange-400/30 via-orange-300/20 to-orange-400/30 rounded-2xl p-[2px] shadow-lg">
                 <div className="bg-white/95 shadow-xl backdrop-blur-xl rounded-2xl p-10 border border-orange-300/10">
