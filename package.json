@@ -12,6 +12,7 @@
   "dependencies": {
     "@netlify/plugin-nextjs": "^5.9.3",
     "@octokit/rest": "^21.1.0",
+    "@supabase/supabase-js": "^2.49.4",
     "@vercel/analytics": "^1.4.1",
     "axios": "^1.7.9",
     "cheerio": "^1.0.0",
