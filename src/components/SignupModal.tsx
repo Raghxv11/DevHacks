@@ -79,7 +79,7 @@ const SignupModal: React.FC<SignupModalProps> = ({ isOpen, onClose }) => {
 
     try {
       // Send a request to the API (you can use Supabase or any backend here)
-      const res = await fetch('/api/auth/signup', {
+      const res = await fetch('api/auth/signup', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
