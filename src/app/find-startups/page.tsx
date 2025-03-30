@@ -405,6 +405,107 @@ const Chatbot: React.FC = () => {
   // Add this function to handle suggestion clicks
   const handleSuggestionClick = (suggestion: string) => {
     setProductIdea(suggestion);
+    // Automatically submit the form after selecting a suggestion
+    setTimeout(() => {
+      // Check for empty input to avoid submitting with empty state
+      if (suggestion.trim()) {
+        setInputError(null);
+        setIsLoading(true);
+        setLoadingProgress(0);
+        
+        // Improved progress simulation
+        const progressInterval = setInterval(() => {
+          setLoadingProgress((prev) => {
+            if (prev >= 85) {
+              return 85; // Cap at 85% until actual completion
+            }
+            return prev + (90 - prev) * 0.1; // Smoother progression
+          });
+        }, 100);
+        
+        fetch("/api/analyze", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            Pragma: "no-cache",
+          },
+          body: JSON.stringify({ productIdea: suggestion }),
+          cache: "no-store",
+        })
+        .then(async (res) => {
+          // Clear previous response before setting new one
+          setResponse(null);
+          
+          const data = await res.json();
+          console.log("Raw API Response:", data);
+          console.log("Raw content:", data.content);
+          console.log("Sheet updated:", data.sheetUpdated);
+          
+          if (data.error) {
+            console.error("Error from API:", data.error);
+            throw new Error(data.error);
+          }
+          
+          const formattedContent = formatAnalysisContent(data.content);
+          setResponse({
+            ...data,
+            content: formattedContent,
+          });
+          
+          setLoadingProgress(100);
+          
+          // Scroll to results after a brief delay
+          setTimeout(() => {
+            resultsRef.current?.scrollIntoView({
+              behavior: "smooth",
+              block: "start",
+            });
+            setIsLoading(false);
+          }, 500);
+        })
+        .catch((error) => {
+          console.error("Error analyzing product idea:", error);
+          setResponse({
+            content: `
+              <div class="space-y-6">
+                <div class="bg-investa-primary/10 border border-investa-primary/20 rounded-xl p-6 backdrop-blur-sm">
+                  <div class="flex items-center gap-3 text-investa-primary">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                    <h3 class="font-semibold">Uh-oh! We hit a snag</h3>
+                  </div>
+                  <p class="mt-3 text-investa-gray">We're having some trouble analyzing your idea right now. Our team has been notified and we're working on it. Please try again in a few moments.</p>
+                  <div class="mt-4 flex gap-4">
+                    <button 
+                      onclick="window.location.reload()"
+                      class="text-sm px-4 py-2 rounded-lg bg-investa-primary/20 text-investa-primary hover:bg-investa-primary/30 transition-colors"
+                    >
+                      Try Again
+                    </button>
+                    <a 
+                      href="/"
+                      class="text-sm px-4 py-2 rounded-lg bg-investa-gray/20 text-investa-gray hover:bg-investa-gray/30 transition-colors"
+                    >
+                      Go Home
+                    </a>
+                  </div>
+                </div>
+              </div>
+            `,
+            sheetUpdated: false,
+          });
+          setLoadingProgress(100);
+          setTimeout(() => {
+            setIsLoading(false);
+          }, 500);
+        })
+        .finally(() => {
+          clearInterval(progressInterval);
+        });
+      }
+    }, 100); // Small delay to ensure state updates properly
   };
 
   // Add cleanup when component unmounts
