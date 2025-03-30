@@ -18,6 +18,14 @@ interface ChatResponse {
   sheetUpdated?: boolean;
   error?: string;
   githubResults?: GitHubResult[];
+  productHuntPosts?: any;
+  similarityResults?: {
+    name: string;
+    industry: string;
+    stage: string;
+    website: string;
+    similarity: string;
+  }[];
 }
 
 interface Startup {
@@ -41,9 +49,7 @@ const Chatbot: React.FC = () => {
   const [productIdea, setProductIdea] = useState("");
   const [response, setResponse] = useState<ChatResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [expandedStartups, setExpandedStartups] = useState<Set<number>>(
-    new Set()
-  );
+  const [expandedStartups, setExpandedStartups] = useState<Set<number>>(new Set());
   const [loadingProgress, setLoadingProgress] = useState(0);
   const [inputError, setInputError] = useState<string | null>(null);
   const [selectedSuggestion, setSelectedSuggestion] = useState<string | null>(null);
@@ -92,13 +98,11 @@ const Chatbot: React.FC = () => {
         cache: "no-store",
       });
 
-      // Clear previous response before setting new one
+      // Clear previous response
       setResponse(null);
 
       const data = await res.json();
       console.log("Raw API Response:", data);
-      console.log("Raw content:", data.content);
-      console.log("Sheet updated:", data.sheetUpdated);
 
       if (data.error) {
         console.error("Error from API:", data.error);
@@ -731,10 +735,34 @@ const Chatbot: React.FC = () => {
               </div>
             </div>
           )}
+
+            {/* Similarity Search Results */}
+            {response && response.similarityResults && (
+            <section className="mt-16">
+              <div className="bg-gradient-to-r from-green-400/30 via-green-300/20 to-green-400/30 rounded-2xl p-[2px] shadow-lg">
+                <div className="bg-white/95 shadow-xl backdrop-blur-xl rounded-2xl p-10 border border-green-300/10">
+                  <h2 className="text-2xl font-bold text-green-700 mb-6 text-center">
+                    YC Search Results
+                  </h2>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {response.similarityResults.map((startup, index) => (
+                      <div key={index} className="bg-white rounded-xl border border-green-200 p-6 shadow-md hover:shadow-lg transition-all">
+                        <h3 className="font-bold text-lg text-green-800">{startup.name}</h3>
+                        <p className="text-sm text-green-600">Industry: {startup.industry}</p>
+                        <p className="text-sm text-green-600">Stage: {startup.stage}</p>
+                        <p className="text-sm text-green-600">Website: <a href={startup.website} target="_blank" rel="noopener noreferrer" className="text-green-700 hover:underline">{startup.website}</a></p>
+                        <p className="text-sm text-green-800 mt-2">Similarity: {startup.similarity}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </section>
+          )}
           
           {/* Footer - Always visible */}
           <div className={`mt-20 text-center text-investa-gray/70 text-sm ${response ? 'pt-12 border-t border-gray-100' : ''}`}>
-            <p>© 2023 Renvue. All investment data is simulated for demonstration purposes only.</p>
+            <p>© 2025 Renvue. All investment data is simulated for demonstration purposes only.</p>
           </div>
         </div>
       </div>
