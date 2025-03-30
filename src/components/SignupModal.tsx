@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
+import { useRouter } from 'next/router';
 
 interface SignupModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onSwitchToSignIn: () => void;
 }
 
-const SignupModal: React.FC<SignupModalProps> = ({ isOpen, onClose }) => {
+const SignupModal: React.FC<SignupModalProps> = ({ isOpen, onClose, onSwitchToSignIn }) => {
   const [activeTab, setActiveTab] = useState<'founder' | 'investor'>('founder');
   const [showEmailForm, setShowEmailForm] = useState(false);
   const [formData, setFormData] = useState({
@@ -352,6 +354,24 @@ const SignupModal: React.FC<SignupModalProps> = ({ isOpen, onClose }) => {
                 </div>
               </div>
             )}
+          </div>
+
+          {/* Sign up form */}
+          {/* Email form and input fields here */}
+          
+          <div className="paragraph_s secondary-color" style={{ textAlign: 'center', marginTop: '20px' }}>
+            <span>Already have an account? </span>
+            <button
+              onClick={onSwitchToSignIn}  
+              style={{
+                background: 'none',
+                border: 'none',
+                color: '#0070F3',
+                cursor: 'pointer'
+              }}
+            >
+              Sign in
+            </button>
           </div>
 
           {/* Error message */}

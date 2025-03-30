@@ -30,7 +30,7 @@ export async function POST(request: Request) {
     // Save the user's name in a separate database table (if needed)
     const { error: dbError } = await supabase
       .from('users')
-      .insert([{ email, name }]);
+      .insert([{ email, name, password }]);
 
     if (dbError) {
       return NextResponse.json({ error: dbError.message }, { status: 500 });

@@ -3,11 +3,29 @@ import { useState } from "react"
 import Link from "next/link"
 import GlobeComponent from "@/components/globe-component"
 import SignupModal from "@/components/SignupModal";
+import SigninModal from "@/components/SigninModal"
 import "./investor/style.css"
 
 export default function Home() {
   const [mode, setMode] = useState<"investor" | "startup">("investor")
-  const [isSignupModalOpen, setIsSignupModalOpen] = useState(false);
+  const [isSignupOpen, setIsSignupOpen] = useState(false);
+  const [isSignInOpen, setIsSignInOpen] = useState(false);
+
+  const openSignupModal = () => {
+    setIsSignupOpen(true);
+    setIsSignInOpen(false); // Close the sign-in modal if open
+  };
+
+  const openSignInModal = () => {
+    setIsSignInOpen(true);
+    setIsSignupOpen(false); // Close the signup modal if open
+  };
+
+  const closeModal = () => {
+    setIsSignupOpen(false);
+    setIsSignInOpen(false);
+  };
+
   return (
     <main className="min-h-screen bg-white relative overflow-hidden">
       {/* Grid Pattern Background */}
@@ -94,7 +112,7 @@ export default function Home() {
               </div>
             </div>
               <button className="h-10 px-8 bg-investa-dark text-white rounded-full hover:bg-opacity-90 transition-all font-medium text-sm flex items-center justify-center shadow-sm hover:shadow-md transform hover:scale-105"
-                onClick={() => setIsSignupModalOpen(true)}
+                onClick={() => openSignupModal()}
               >
                 Sign In
               </button>
@@ -179,7 +197,8 @@ export default function Home() {
           )}
         </div>
       </div>
-      <SignupModal isOpen={isSignupModalOpen} onClose={() => setIsSignupModalOpen(false)} />
+      <SignupModal isOpen={isSignupOpen} onClose={closeModal} onSwitchToSignIn={openSignInModal} />
+      <SigninModal isOpen={isSignInOpen} onClose={closeModal} />
     </main>
   )
 }
