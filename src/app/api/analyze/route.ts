@@ -1,19 +1,26 @@
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
 import { appendToSheet } from "@/utils/googleSheets";
-import { headers } from 'next/headers';
 import { searchGitHub } from "@/utils/githubSearch";
-import { getProductHuntPosts } from "@/utils/productHunt";  // Import your scraping function
+import { getProductHuntPosts } from "@/utils/productHunt";
+import * as fs from "fs";
 
-// Change runtime to nodejs
+// --- Configuration & Clients ---
 export const runtime = 'nodejs';
 export const maxDuration = 60;
 export const dynamic = 'force-dynamic';
 
-const client = new OpenAI({
+// Perplexity client for chat completions (for product idea analysis)
+const perplexityClient = new OpenAI({
   apiKey: process.env.PERPLEXITY_API_KEY,
   baseURL: "https://api.perplexity.ai",
 });
+
+// Hugging Face Inference API settings for embeddings
+// Using the pipeline endpoint which expects: { "inputs": [ "sentence 1", "sentence 2", ... ] }
+const HF_API_URL =
+  "https://api-inference.huggingface.co/pipeline/feature-extraction/sentence-transformers/all-MiniLM-L6-v2";
+const HF_API_TOKEN = process.env.HF_API_KEY as string;
 
 const systemPrompt = `You are an investment research assistant. Analyze the provided problem or product idea and return a JSON response.
 IMPORTANT: Your response must be ONLY valid JSON with NO markdown, NO code blocks, and NO additional text. If it contains source details in its title/name then you must have the same in your response structure startup name.
@@ -52,11 +59,91 @@ The response must exactly match this structure:
     }
   }
 }
-
+  
 Remember: Return ONLY the JSON. No text before or after. No markdown formatting.`;
 
+// --- Helper Functions for Hugging Face Embeddings ---
+
+const BATCH_SIZE = 100;
+const MAX_DESCRIPTION_LENGTH = 150;
+
+// Format a company object into a complete sentence.
+function companyEmbeddingText(company: any): string {
+  const desc = company.long_description ? company.long_description.substring(0, MAX_DESCRIPTION_LENGTH).trim() : "";
+  return `${company.name}. ${desc}. Industry: ${company.industry}. Stage: ${company.stage}.`;
+}
+
+// Batch-call the Hugging Face API for an array of texts.
+async function fetchEmbeddingsBatch(texts: string[]): Promise<number[][]> {
+  const response = await fetch(HF_API_URL, {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${HF_API_TOKEN}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ inputs: texts })
+  });
+  if (!response.ok) {
+    const errText = await response.text();
+    throw new Error(`Hugging Face API error: ${response.status} ${response.statusText}: ${errText}`);
+  }
+  const result = await response.json();
+  if (!Array.isArray(result)) {
+    throw new Error("Unexpected embedding response format");
+  }
+  return result as number[][];
+}
+
+// Cosine similarity between two vectors.
+function cosineSimilarity(vecA: number[], vecB: number[]): number {
+  let dot = 0, normA = 0, normB = 0;
+  for (let i = 0; i < vecA.length; i++) {
+    dot += vecA[i] * vecB[i];
+    normA += vecA[i] ** 2;
+    normB += vecB[i] ** 2;
+  }
+  if (normA === 0 || normB === 0) return 0;
+  return dot / (Math.sqrt(normA) * Math.sqrt(normB));
+}
+
+// --- Caching Company Embeddings ---
+let cachedCompanyEmbeddings: { company: any; embedding: number[] }[] | null = null;
+
+async function createEmbeddingsForCompanies() {
+  if (cachedCompanyEmbeddings) return cachedCompanyEmbeddings;
+  const companies = JSON.parse(fs.readFileSync("output.json", "utf8"));
+  const texts = companies.map((company: any) => companyEmbeddingText(company));
+  const companyEmbeddings: { company: any; embedding: number[] }[] = [];
+  
+  for (let i = 0; i < texts.length; i += BATCH_SIZE) {
+    const batchTexts = texts.slice(i, i + BATCH_SIZE);
+    console.log(`Processing batch ${Math.floor(i / BATCH_SIZE) + 1} / ${Math.ceil(texts.length / BATCH_SIZE)}`);
+    const batchEmbeddings = await fetchEmbeddingsBatch(batchTexts);
+    for (let j = 0; j < batchEmbeddings.length; j++) {
+      companyEmbeddings.push({
+        company: companies[i + j],
+        embedding: batchEmbeddings[j],
+      });
+    }
+  }
+  cachedCompanyEmbeddings = companyEmbeddings;
+  return companyEmbeddings;
+}
+
+// Compute similarity scores for a given prompt.
+async function similaritySearch(prompt: string, companyEmbeddings: { company: any; embedding: number[] }[]) {
+  const promptEmbeddings = await fetchEmbeddingsBatch([prompt]);
+  const promptEmbedding = promptEmbeddings[0];
+  const similarities = companyEmbeddings.map((item) => {
+    const sim = cosineSimilarity(promptEmbedding, item.embedding);
+    return { company: item.company, similarity: sim };
+  });
+  similarities.sort((a, b) => b.similarity - a.similarity);
+  return similarities;
+}
+
+// --- Main POST Endpoint ---
 export async function POST(request: Request) {
-  // Move headers definition outside try block
   const responseHeaders: Record<string, string> = {
     'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
     'Pragma': 'no-cache',
@@ -64,122 +151,119 @@ export async function POST(request: Request) {
   };
 
   try {
-    if (!process.env.PERPLEXITY_API_KEY) {
-      throw new Error("PERPLEXITY_API_KEY is not configured");
+    if (!process.env.PERPLEXITY_API_KEY || !process.env.HF_API_KEY) {
+      throw new Error("Required API keys are not configured");
     }
-
-    const { productIdea } = await request.json();
+    const body = await request.json();
+    const { productIdea, similarityPrompt } = body;
     if (!productIdea) {
-      return NextResponse.json(
-        { error: "Product idea is required" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Product idea is required" }, { status: 400 });
     }
-
+    
     console.log("Analyzing product idea:", productIdea);
+    
+    // 1. Run GitHub search first.
+    const githubResults = await searchGitHub(productIdea);
+    console.log("GitHub results obtained.");
 
-    // Fetch the product posts from Product Hunt
+    // 2. Then fetch Product Hunt posts.
     const productHuntPosts = await getProductHuntPosts();
     console.log("Fetched Product Hunt Posts:", productHuntPosts);
 
-    // Perform GitHub search in parallel with AI analysis
-    const githubSearchPromise = searchGitHub(productIdea);
+    // 3. Determine if we perform similarity search.
+    // We trigger if an explicit similarityPrompt is provided,
+    // or if the product idea is short (<=10 words).
+    const searchText =
+      similarityPrompt ||
+      (typeof productIdea === "string" && productIdea.trim().split(/\s+/).length <= 10
+        ? productIdea.trim()
+        : null);
 
-    try {
-      const [response, githubResults] = await Promise.all([ 
-        client.chat.completions.create({
-          model: "llama-3.1-sonar-large-128k-online",
-          messages: [
-            {
-              role: "system",
-              content: systemPrompt,
-            },
-            {
-              role: "user",
-              content: productIdea + `Here are some recent posts from Product Hunt that could be relevant for this idea: ${JSON.stringify(productHuntPosts)}`,
-            }
-          ],
-          temperature: 0.7,
-          max_tokens: 2000,
-        }),
-        githubSearchPromise
-      ]);
-
-      if (!response.choices?.[0]?.message?.content) {
-        throw new Error("No response content from API");
-      }
-
-      const content = response.choices[0].message.content;
-      console.log("Raw API Response:", content);
-
-      let cleanContent = content.trim();
-
-      if (cleanContent.startsWith("```") && cleanContent.endsWith("```")) {
-        cleanContent = cleanContent.slice(3, -3).trim();
-      }
-      if (cleanContent.startsWith("json")) {
-        cleanContent = cleanContent.slice(4).trim();
-      }
-
-      console.log("Cleaned content for parsing:", cleanContent);
-
+    let similarityResults = null;
+    if (searchText) {
+      console.log("Performing similarity search for prompt:", searchText);
       try {
-        const parsed = JSON.parse(cleanContent);
-        console.log("Successfully parsed JSON:", parsed);
-
-        if (!parsed || !parsed.result) {
-          throw new Error("Invalid JSON structure: missing result object");
-        }
-
-        const analysisResult = parsed.result;
-        console.log("Analysis result structure:", {
-          has_problem_statement: !!analysisResult.problem_statement,
-          has_market_analysis: !!analysisResult.market_analysis,
-          has_investment_opportunity: !!analysisResult.investment_opportunity,
-          has_conclusion: !!analysisResult.conclusion,
-        });
-
-        const sheetResult = await appendToSheet({
-          productIdea,
-          analysisResult,
-          timestamp: new Date().toISOString(),
-        });
-
-        console.log("Sheet update result:", sheetResult);
-
-        return NextResponse.json({
-          content: cleanContent,
-          githubResults,
-          sheetUpdated: sheetResult,
-        }, { headers: responseHeaders });
-      } catch (parseError) {
-        console.error("JSON Parse Error:", parseError);
-        console.error("Failed content:", cleanContent);
-        return NextResponse.json(
-          {
-            error: "Failed to parse API response as JSON",
-            details:
-              parseError instanceof Error
-                ? parseError.message
-                : "Unknown parsing error",
-            content: cleanContent,
-            rawContent: content,
-          },
-          { status: 422, headers: responseHeaders }
-        );
+        const companyEmbeddings = await createEmbeddingsForCompanies();
+        const simResults = await similaritySearch(searchText, companyEmbeddings);
+        similarityResults = simResults.slice(0, 5).map(({ company, similarity }) => ({
+          name: company.name,
+          industry: company.industry,
+          stage: company.stage,
+          website: company.website,
+          similarity: similarity.toFixed(4),
+        }));
+      } catch (err: any) {
+        console.error("Error during similarity search:", err);
+        // Continue even if similarity search fails.
+        similarityResults = { error: err instanceof Error ? err.message : "Unknown error" };
       }
-    } catch (apiError) {
-      console.error("API Error:", apiError);
+    }
+
+    // 4. Finally, perform the Perplexity chat completion for overall analysis.
+    const perplexityResponse = await perplexityClient.chat.completions.create({
+      model: "llama-3.1-sonar-large-128k-online",
+      messages: [
+        { role: "system", content: systemPrompt },
+        {
+          role: "user",
+          content: productIdea + ` Here are some recent Product Hunt posts that could be relevant: ${JSON.stringify(productHuntPosts)}`,
+        },
+      ],
+      temperature: 0.7,
+      max_tokens: 2000,
+    });
+
+    if (!perplexityResponse.choices?.[0]?.message?.content) {
+      throw new Error("No response content from API");
+    }
+    const rawContent = perplexityResponse.choices[0].message.content;
+    console.log("Raw API Response:", rawContent);
+    let cleanContent = rawContent.trim();
+    if (cleanContent.startsWith("```") && cleanContent.endsWith("```")) {
+      cleanContent = cleanContent.slice(3, -3).trim();
+    }
+    if (cleanContent.startsWith("json")) {
+      cleanContent = cleanContent.slice(4).trim();
+    }
+    console.log("Cleaned content for parsing:", cleanContent);
+
+    let analysisResult;
+    try {
+      analysisResult = JSON.parse(cleanContent);
+      console.log("Successfully parsed JSON:", analysisResult);
+      if (!analysisResult || !analysisResult.result) {
+        throw new Error("Invalid JSON structure: missing result object");
+      }
+    } catch (parseError: any) {
+      console.error("JSON Parse Error:", parseError);
       return NextResponse.json(
         {
-          error: "Failed to get analysis from API",
-          details:
-            apiError instanceof Error ? apiError.message : "Unknown API error",
+          error: "Failed to parse API response as JSON",
+          details: parseError instanceof Error ? parseError.message : "Unknown parsing error",
+          content: cleanContent,
+          rawContent,
         },
-        { status: 500, headers: responseHeaders }
+        { status: 422, headers: responseHeaders }
       );
     }
-  } catch (error) {
+    
+    // Append to sheet.
+    const sheetResult = await appendToSheet({
+      productIdea,
+      analysisResult: analysisResult.result,
+      timestamp: new Date().toISOString(),
+    });
+    console.log("Sheet update result:", sheetResult);
+
+    return NextResponse.json({
+      content: cleanContent,
+      githubResults,
+      productHuntPosts,
+      similarityResults,
+      sheetUpdated: sheetResult,
+    }, { headers: responseHeaders });
+    
+  } catch (error: any) {
     console.error("Request Error:", error);
     return NextResponse.json(
       {

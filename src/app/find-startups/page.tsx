@@ -732,6 +732,30 @@ const Chatbot: React.FC = () => {
               </div>
             </div>
           )}
+
+          {/* Similarity Search Results */}
+          {response && response.similarityResults && (
+            <section className="mt-16">
+              <div className="bg-gradient-to-r from-orange-400/30 via-orange-300/20 to-orange-400/30 rounded-2xl p-[2px] shadow-lg">
+                <div className="bg-white/95 shadow-xl backdrop-blur-xl rounded-2xl p-10 border border-orange-300/10">
+                  <h2 className="text-2xl font-bold text-orange-700 mb-6 text-center">
+                    YC Search Results
+                  </h2>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {response.similarityResults.map((startup, index) => (
+                      <div key={index} className="bg-white rounded-xl border border-green-200 p-6 shadow-md hover:shadow-lg transition-all">
+                        <h3 className="font-bold text-lg text-orange-800">{startup.name}</h3>
+                        <p className="text-sm text-orange-600">Industry: {startup.industry}</p>
+                        <p className="text-sm text-orange-600">Stage: {startup.stage}</p>
+                        <p className="text-sm text-orange-600">Website: <a href={startup.website} target="_blank" rel="noopener noreferrer" className="text-green-700 hover:underline">{startup.website}</a></p>
+                        <p className="text-sm text-orange-800 mt-2">Similarity: {startup.similarity}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </section>
+          )}
           
           {/* Footer - Always visible */}
           <div className={`mt-20 text-center text-investa-gray/70 text-sm ${response ? 'pt-12 border-t border-gray-100' : ''}`}>
