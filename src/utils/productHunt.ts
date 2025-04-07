@@ -139,3 +139,4 @@ export const getProductHuntPosts = async (): Promise<PostData[]> => {
 
   return posts;
 };
+
