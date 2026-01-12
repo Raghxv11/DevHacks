@@ -47,13 +47,13 @@ export default function GlobeComponent() {
   }, []); // Empty dependency array ensures this runs once on mount
 
   return (
-    <div className="relative w-full h-[300px] md:h-[450px] overflow-visible">
+    <div className="relative w-full h-[350px] md:h-[450px] overflow-hidden md:overflow-visible">
       {/* Globe Base */}
-      <div className="absolute left-1/2 top-0 transform -translate-x-1/2 scale-[0.4] md:scale-100 origin-top transition-transform duration-300">
-        {/* Main Globe - Static */}
+      <div className="absolute left-1/2 top-0 transform -translate-x-1/2 origin-top">
+        {/* Main Globe - Responsive Size */}
         <div
           ref={globeRef}
-          className="w-[1000px] h-[1000px] rounded-full relative"
+          className="w-[180vw] h-[180vw] md:w-[1000px] md:h-[1000px] rounded-full relative"
           style={{
             background: "radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.9), rgba(241, 53, 5, 0.03))",
             boxShadow: "inset 0 0 60px rgba(241, 53, 5, 0.15), 0 0 40px rgba(241, 53, 5, 0.1)",
@@ -85,7 +85,7 @@ export default function GlobeComponent() {
             {companyLogos.map((logo) => (
               <div
                 key={logo.id}
-                className="absolute flex items-center justify-center bg-white rounded-full shadow-lg hover:shadow-xl transform hover:scale-125 transition-all duration-300 group -mt-8 -ml-4 company-logo-item" // Added 'company-logo-item' class
+                className="absolute flex items-center justify-center bg-white rounded-full shadow-lg hover:shadow-xl transform scale-75 md:scale-100 hover:scale-90 md:hover:scale-125 origin-center transition-all duration-300 group -mt-8 -ml-4 company-logo-item" // Added 'company-logo-item' class
                 style={{
                   left: `${logo.position.x}%`,
                   top: `${logo.position.y}%`,
@@ -139,7 +139,7 @@ export default function GlobeComponent() {
             ].map((dot, i) => (
               <div
                 key={i}
-                className="absolute rounded-full bg-investa-primary animate-twinkle glowing-dot" // Added 'glowing-dot' class
+                className="absolute rounded-full bg-investa-primary animate-twinkle glowing-dot transform scale-75 md:scale-100" // Added 'glowing-dot' class
                 style={{
                   left: dot.left,
                   top: dot.top,
