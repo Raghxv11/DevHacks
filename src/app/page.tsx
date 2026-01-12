@@ -23,11 +23,11 @@ export default function Home() {
         }}
       />
 
-      <div className="relative z-10 px-4 pt-8 pb-0">
+      <div className="relative z-10 px-4 pt-4 md:pt-8 pb-0">
         {/* Navbar */}
-        <nav className="flex justify-between items-center mb-8 max-w-8xl mx-auto -mt-4">
-          <div className="font-bold text-4xl text-investa-primary">Renvue</div>
-          <div className="flex items-center gap-4">
+        <nav className="flex flex-col md:flex-row justify-between items-center mb-8 max-w-8xl mx-auto gap-4 md:gap-0">
+          <div className="font-bold text-3xl md:text-4xl text-investa-primary">Renvue</div>
+          <div className="flex items-center gap-3 md:gap-4 scale-90 md:scale-100 origin-center md:origin-right">
             {/* Mode Toggle - Elite Design */}
             <div className="relative flex items-center">
               <div
@@ -51,7 +51,7 @@ export default function Home() {
                 ></div>
                 <button
                   onClick={() => setMode("investor")}
-                  className={`relative z-10 flex items-center min-w-[90px] justify-center py-2 px-4 md:px-6 rounded-full text-sm font-medium transition-all duration-300 ${
+                  className={`relative z-10 flex items-center min-w-[80px] md:min-w-[90px] justify-center py-2 px-3 md:px-6 rounded-full text-sm font-medium transition-all duration-300 ${
                     mode === "investor" ? "text-white" : "text-investa-gray hover:text-investa-dark"
                   }`}
                   aria-pressed={mode === "investor"}
@@ -69,7 +69,7 @@ export default function Home() {
                 </button>
                 <button
                   onClick={() => setMode("startup")}
-                  className={`relative z-10 flex items-center min-w-[90px] justify-center py-2 px-4 md:px-6 rounded-full text-sm font-medium transition-all duration-300 ${
+                  className={`relative z-10 flex items-center min-w-[80px] md:min-w-[90px] justify-center py-2 px-3 md:px-6 rounded-full text-sm font-medium transition-all duration-300 ${
                     mode === "startup" ? "text-white" : "text-investa-gray hover:text-investa-dark"
                   }`}
                   aria-pressed={mode === "startup"}
@@ -93,7 +93,7 @@ export default function Home() {
                 </button>
               </div>
             </div>
-              <button className="h-10 px-8 bg-investa-dark text-white rounded-full hover:bg-opacity-90 transition-all font-medium text-sm flex items-center justify-center shadow-sm hover:shadow-md transform hover:scale-105"
+              <button className="h-9 md:h-10 px-5 md:px-8 bg-investa-dark text-white rounded-full hover:bg-opacity-90 transition-all font-medium text-xs md:text-sm flex items-center justify-center shadow-sm hover:shadow-md transform hover:scale-105"
                 onClick={() => setIsSignupModalOpen(true)}
               >
                 Sign In
