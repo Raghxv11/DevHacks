@@ -143,7 +143,7 @@ export default function Home() {
                   <div className="text-xs text-investa-gray">Startup Profile</div>
                   <div className="w-12"></div>
                 </div>
-                <div className="p-8 grid grid-cols-2 md:grid-cols-3 gap-6">
+                <div className="p-4 md:p-8 grid grid-cols-1 md:grid-cols-3 gap-6">
                   <div className="col-span-1 space-y-6">
                     <div className="bg-gray-50 rounded-lg p-4">
                       <h3 className="font-semibold text-investa-dark mb-1">Profile Completion</h3>
@@ -160,7 +160,7 @@ export default function Home() {
                       </div>
                     </div>
                   </div>
-                  <div className="col-span-2 bg-gradient-to-br from-investa-primary/10 to-investa-primary/5 rounded-lg p-6">
+                  <div className="col-span-1 md:col-span-2 bg-gradient-to-br from-investa-primary/10 to-investa-primary/5 rounded-lg p-6">
                     <h3 className="font-semibold text-investa-dark mb-1">Investor Matches</h3>
                     <p className="text-sm text-investa-gray">Investors interested in your sector</p>
                     <div className="mt-4 space-y-3">

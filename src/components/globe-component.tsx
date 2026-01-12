@@ -47,9 +47,9 @@ export default function GlobeComponent() {
   }, []); // Empty dependency array ensures this runs once on mount
 
   return (
-    <div className="relative w-full h-[450px] overflow-visible">
+    <div className="relative w-full h-[300px] md:h-[450px] overflow-visible">
       {/* Globe Base */}
-      <div className="absolute left-1/2 top-0 transform -translate-x-1/2">
+      <div className="absolute left-1/2 top-0 transform -translate-x-1/2 scale-[0.4] md:scale-100 origin-top transition-transform duration-300">
         {/* Main Globe - Static */}
         <div
           ref={globeRef}
